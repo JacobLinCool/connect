@@ -26,7 +26,10 @@
                     <li>Max: <span>X</span> ms</li>
                     <li>Times: <span>X</span></li>
                 </ul>
-                <div id="chart"></div>
+                <h3>Single Ping</h3>
+                <div id="chart_single"></div>
+                <h3>10 Pings' Avg.</h3>
+                <div id="chart_10avg"></div>
             </div>
         </div>
         <style>
@@ -52,7 +55,8 @@
                 height: calc(100% - 12px);
                 margin: 6px 8px;
             }
-            #chart {
+            #chart_single,
+            #chart_10avg {
                 width: 100%;
                 height: 300px;
             }
@@ -62,7 +66,8 @@
         <script src="./colo.js"></script>
         <script>
             const ping = new Ping(updatePing);
-            const chart = echarts.init(document.getElementById("chart"));
+            const chart_single = echarts.init(document.getElementById("chart_single"));
+            const chart_10avg = echarts.init(document.getElementById("chart_10avg"));
             updateInfo().then(() => {
                 ping.start();
             });
@@ -94,6 +99,12 @@
                 [...document.querySelectorAll("#ping > ul > li > span")].forEach((span, i) => {
                     span.innerHTML = d[i];
                 });
+
+                updatePingSingle(data);
+                updatePing10avg(JSON.parse(JSON.stringify(data)));
+            }
+
+            function updatePingSingle(data) {
                 const option = {
                     xAxis: {
                         type: "category",
@@ -114,7 +125,37 @@
                         },
                     ],
                 };
-                chart.setOption(option);
+                chart_single.setOption(option);
+            }
+
+            function updatePing10avg(raw) {
+                const data = [];
+                while (raw.length) {
+                    let sub = raw.splice(0, 10);
+                    let avg = sub.reduce((a, b) => a + b.latency, 0) / sub.length;
+                    data.push({ time: sub[0].time, latency: avg });
+                }
+                const option = {
+                    xAxis: {
+                        type: "category",
+                        data: data.map((x) => {
+                            let d = new Date(x.time);
+                            return d.getHours() + ":" + d.getMinutes() + ":" + d.getSeconds();
+                        }),
+                    },
+                    yAxis: {
+                        type: "value",
+                    },
+                    series: [
+                        {
+                            data: data.map((x) => x.latency),
+                            type: "line",
+                            smooth: true,
+                            showSymbol: false,
+                        },
+                    ],
+                };
+                chart_10avg.setOption(option);
             }
         </script>
     </body>
