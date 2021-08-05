@@ -1,0 +1,22 @@
+{
+    "name": "",
+    "version": "1.0.0",
+    "description": "",
+    "author": "JacobLinCool",
+    "license": "MIT",
+    "scripts": {
+        "build": "wrangler build",
+        "dev": "wrangler preview --watch",
+        "preview": "wrangler preview --watch",
+        "publish": "wrangler publish"
+    },
+    "dependencies": {
+        "itty-router": "^2.3.10",
+        "ua-parser-js": "^0.7.28"
+    },
+    "devDependencies": {
+        "@cloudflare/wrangler": "^1.19.0",
+        "webpack": "^5.37.1",
+        "webpack-cli": "^4.7.0"
+    }
+}
