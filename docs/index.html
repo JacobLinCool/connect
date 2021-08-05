@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>CONNECTION</title>
+    </head>
+    <body>
+        <div id="container">
+            <h1>CONNECTION</h1>
+            <div id="info">
+                <h2>Info</h2>
+                <ul>
+                    <li>IP: <span>Loading...</span></li>
+                    <li>Location: <span>Loading...</span></li>
+                    <li>OS: <span>Loading...</span></li>
+                    <li>Browser: <span>Loading...</span></li>
+                    <li>Server: <span>Loading...</span></li>
+                </ul>
+            </div>
+            <div id="ping">
+                <h2>Ping</h2>
+                <ul>
+                    <li>Avg: <span>X</span> ms</li>
+                    <li>Min: <span>X</span> ms</li>
+                    <li>Max: <span>X</span> ms</li>
+                    <li>Times: <span>X</span></li>
+                </ul>
+                <div id="chart"></div>
+            </div>
+        </div>
+        <style>
+            * {
+                position: relative;
+                font-family: sans-serif;
+            }
+            html,
+            body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+
+                display: flex;
+                flex-direction: column;
+                justify-content: flex-start;
+                align-items: center;
+            }
+            #container {
+                width: calc(100% - 16px);
+                max-width: 600px;
+                height: calc(100% - 12px);
+                margin: 6px 8px;
+            }
+            #chart {
+                width: 100%;
+                height: 300px;
+            }
+        </style>
+        <script src="https://cdn.jsdelivr.net/npm/echarts@5.1.2/dist/echarts.min.js"></script>
+        <script src="./ping.js"></script>
+        <script src="./colo.js"></script>
+        <script>
+            const ping = new Ping(updatePing);
+            const chart = echarts.init(document.getElementById("chart"));
+            updateInfo().then(() => {
+                ping.start();
+            });
+
+            async function updateInfo() {
+                const { client, server } = await fetch("https://connect.jacob.workers.dev/").then((r) => r.json());
+                const data = [
+                    client.ip,
+                    [client.location.continent, client.location.country, client.location.region, client.location.city].join(" / "),
+                    client.os.name + " " + client.os.version,
+                    client.browser.name + " " + client.browser.version,
+                    colo[server.location] ? `${server.location} (${colo[server.location]})` : server.location,
+                ];
+                [...document.querySelectorAll("#info > ul > li > span")].forEach((span, i) => {
+                    span.innerHTML = data[i];
+                });
+            }
+
+            function updatePing(result, data) {
+                // [avg, min, max, times]
+                const d = [0, Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER, data.length];
+                for (let i = 0; i < data.length; i++) {
+                    d[0] += data[i].latency;
+                    d[1] = Math.min(d[1], data[i].latency).toFixed(1);
+                    d[2] = Math.max(d[2], data[i].latency).toFixed(1);
+                }
+                d[0] = (d[0] / data.length).toFixed(1);
+
+                [...document.querySelectorAll("#ping > ul > li > span")].forEach((span, i) => {
+                    span.innerHTML = d[i];
+                });
+                const option = {
+                    xAxis: {
+                        type: "category",
+                        data: data.map((x) => {
+                            let d = new Date(x.time);
+                            return d.getHours() + ":" + d.getMinutes() + ":" + d.getSeconds();
+                        }),
+                    },
+                    yAxis: {
+                        type: "value",
+                    },
+                    series: [
+                        {
+                            data: data.map((x) => x.latency),
+                            type: "line",
+                            smooth: true,
+                            showSymbol: false,
+                        },
+                    ],
+                };
+                chart.setOption(option);
+            }
+        </script>
+    </body>
+</html>
